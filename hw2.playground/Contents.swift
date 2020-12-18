@@ -17,7 +17,6 @@ enum AuthErrors: Error{
     case wrongAuthData
 }
 
-// someBuilder.setValueA(1).setValueB(2).create() => buider pattern
 private protocol Registration{
     func createUsername(name: String) throws -> String
     func createPassword(password: String) throws -> String
@@ -25,7 +24,10 @@ private protocol Registration{
 }
 
 protocol LogIn{
-    
+    func logIn(userName: String, password: String)  -> BettingSystem
+    func isRegistered(userName: String) throws -> User
+    func isBlocked(userName: String) throws
+    func checkPassword(password: String) throws   
 }
 
 enum SystemState{
@@ -111,7 +113,7 @@ class BettingSystem{
     
     func blockedUser(userName: String) -> BettingSystem {
         guard self.systemState == SystemState.adminAuthoraized else {
-            print("You can't do this")
+            print("You can't do this.You are regularUser")
             return self
         }
         self.blockedUsers.updateValue(self.users[userName]!, forKey: userName)
@@ -132,18 +134,21 @@ extension BettingSystem: LogIn{
             try isBlocked(userName: userName)
         } catch AuthErrors.blockedUser,_{
             print("You are not allowed to registration.You are in black list")
+            return self
         }
         
         do {
             currentUser = try isRegistered(userName: userName)
         } catch AuthErrors.wrongAuthData,_{
             print("You write something wrong. Please try again, or you should make registration")
+            return self
         }
         
         do {
             try checkPassword(password: password)
         } catch AuthErrors.wrongAuthData,_ {
             print("You write something wrong. Please try again, or you should make registration")
+            return self
         }
         if currentUser!.role == Role.regularUser{
             self.systemState = SystemState.regularUserAuthoraized
@@ -190,7 +195,7 @@ extension BettingSystem: Registration{
             return self
         }
         catch RegistretionErrors.userAlreadyExist, _{
-            print("Ooops, user has already exist. Move on to login ")
+            print("Ooops, user has already existed. Move on to login ")
             return self
         }
         
@@ -242,5 +247,10 @@ bettingSystem.logOut()
 bettingSystem.register(name: "Sasha", password: "green", role: Role.admin)
 bettingSystem.logIn(userName: "Sasha", password: "green")
 bettingSystem.printUsers()
+bettingSystem.blockedUser(userName: "Pasha")
+bettingSystem.printUsers()
+bettingSystem.logIn(userName: "Pasha", password: "green")
+bettingSystem.logOut()
+bettingSystem.logIn(userName: "Pasha", password: "green")
+print(bettingSystem.users)
 
-//bettingSystem.printPlacedBets()
